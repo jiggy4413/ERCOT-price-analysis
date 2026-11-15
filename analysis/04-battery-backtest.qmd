@@ -1,0 +1,55 @@
+---
+title: "Would a battery have made money?"
+author: "Juan"
+format:
+  html:
+    code-fold: true
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+Backtest a simple battery: buy power when it is cheap, sell when it is expensive.
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(lubridate)
+
+# Run the scripts in R/ first (see the README).
+ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
+```
+
+## Set up the battery
+
+- Choose a size (for example 100 MW / 200 MWh), round-trip efficiency (about 85%), and one charge-discharge cycle per day.
+- State your simplifications: price-taker, no degradation, no ancillary-service revenue.
+
+```{r}
+# Your code here
+```
+
+Findings:
+
+## Strategies
+
+- Perfect foresight: charge in each day's cheapest 2 hours and discharge in the most expensive 2. This is the upper bound.
+- A rule you could actually follow, using only information known in advance (for example the day-ahead prices).
+- Compare revenue per MW-year by hub and by year. How much of the perfect-foresight revenue does the realistic rule capture?
+
+```{r}
+# Your code here
+```
+
+Findings:
+
+## Takeaway
+
+- Which hub and which years were best for storage, and why?
+
+```{r}
+# Your code here
+```
+
+Findings:

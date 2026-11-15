@@ -1,0 +1,54 @@
+---
+title: "Do wind and solar lower prices?"
+author: "Juan"
+format:
+  html:
+    code-fold: true
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+The main question of the project: when more of demand is met by wind and solar, how much lower is the price, and does that effect change over time?
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(lubridate)
+
+# Run the scripts in R/ first (see the README).
+ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
+```
+
+## Look first
+
+- Scatter price against renewable share (or net load). Is the relationship straight, curved, or does it bend sharply at high net load?
+
+```{r}
+# Your code here
+```
+
+Findings:
+
+## Model
+
+- Fit a regression of price on renewable share with controls for hour of day, month and year. Interpret the coefficient in $/MWh.
+- Does the effect differ by hub, by season, or between 2019 and 2025?
+- Prices have extreme spikes. How does using log price, or dropping Winter Storm Uri (Feb 2021), change the answer?
+
+```{r}
+# Your code here
+```
+
+Findings:
+
+## Takeaway
+
+- Write two or three sentences a non-technical reader would understand.
+
+```{r}
+# Your code here
+```
+
+Findings:

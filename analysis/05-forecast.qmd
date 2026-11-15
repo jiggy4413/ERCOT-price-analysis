@@ -1,0 +1,54 @@
+---
+title: "Forecasting day-ahead prices"
+author: "Juan"
+format:
+  html:
+    code-fold: true
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+Build a forecast and, more importantly, test it honestly.
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(lubridate)
+
+# Run the scripts in R/ first (see the README).
+ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
+```
+
+## Baselines first
+
+- Naive forecast: tomorrow's price equals the same hour today. Also try the same hour last week.
+- Use a time-based split: train on 2019-2023, test on 2024-2025. Never shuffle time series.
+
+```{r}
+# Your code here
+```
+
+Findings:
+
+## Your model
+
+- Try a regression or a gradient-boosted model with hour, weekday, month, forecast net load and lagged prices.
+- Only use information that would be known when the forecast is made.
+
+```{r}
+# Your code here
+```
+
+Findings:
+
+## Evaluate
+
+- Report MAE and RMSE against the baselines. Where does the model fail worst?
+
+```{r}
+# Your code here
+```
+
+Findings:

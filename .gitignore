@@ -1,0 +1,18 @@
+# Data is downloaded locally (see data/README.md); too large for GitHub
+data/raw/
+data/processed/
+
+# Secrets
+.Renviron
+
+# Rendered output
+*.html
+*_files/
+.quarto/
+
+# R / RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store

@@ -1,0 +1,56 @@
+---
+title: "Exploring the data"
+author: "Juan"
+format:
+  html:
+    code-fold: true
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+Get to know the data before modeling anything. Every chart here should end with one sentence saying what it shows.
+
+```{r}
+#| label: setup
+library(tidyverse)
+library(lubridate)
+
+# Run the scripts in R/ first (see the README).
+ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
+```
+
+## Sanity checks
+
+- Do the time stamps line up? Solar output should peak around 1 p.m. Central. If it peaks at 2 p.m. or noon, the hour-ending conversion in `R/02_download_eia.R` is off by one.
+- How many hours are missing for each source, and are they clustered (a whole month) or scattered?
+- Do the yearly average prices look plausible? Compare a few against ERCOT or Potomac Economics market reports.
+
+```{r}
+# Your code here
+```
+
+Findings:
+
+## The grid over time
+
+- How have wind and solar output grown from 2019 to 2025?
+- What does an average day look like (demand, wind, solar, price by hour), and how does it differ between summer and winter?
+
+```{r}
+# Your code here
+```
+
+Findings:
+
+## Prices
+
+- What does the distribution of hourly real-time prices look like? Try a log scale, and count the negative-price hours.
+- How do the hubs differ? Why might HB_WEST be cheaper more often?
+
+```{r}
+# Your code here
+```
+
+Findings:
