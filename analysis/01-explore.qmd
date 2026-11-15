@@ -1,6 +1,6 @@
 ---
 title: "Exploring the data"
-author: "Juan"
+author: "Juan Ignacio Mendez Valdez"
 format:
   html:
     code-fold: true
@@ -22,35 +22,271 @@ ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
 ```
 
 ## Sanity checks
+### Check 1: Do the time stamps line up?
 
-- Do the time stamps line up? Solar output should peak around 1 p.m. Central. If it peaks at 2 p.m. or noon, the hour-ending conversion in `R/02_download_eia.R` is off by one.
-- How many hours are missing for each source, and are they clustered (a whole month) or scattered?
-- Do the yearly average prices look plausible? Compare a few against ERCOT or Potomac Economics market reports.
+Solar output should peak around 1 p.m. Central. A peak at noon or 2 p.m. would
+mean the hour conversion is off by one.
 
 ```{r}
-# Your code here
+#| label: check-solar-peak
+#| code-summary: "Code: solar output by hour"
+
+ercot |>
+  filter(hub == "HB_BUSAVG") |>   # grid data repeats for every hub; use one
+  group_by(hour_local) |>
+  summarise(avg_solar = mean(solar_mw, na.rm = TRUE)) |>
+  ggplot(aes(hour_local, avg_solar)) +
+  geom_col() +
+  labs(x = "Hour of day (Central)", y = "Average solar output (MW)",
+       title = "Solar output peaks in the 1 p.m. hour")
 ```
 
-Findings:
+**Findings:** Solar output peaks in the 1–2 p.m. Central hour, as expected for
+Texas, so the generation data and prices are aligned hour for hour.
+
+### Check 2: Missing data
+
+How many hours are missing for each source, and are they clustered or scattered?
+
+```{r}
+#| label: check-missing-counts
+#| code-summary: "Code: missing hours by column"
+
+ercot |>
+  filter(hub == "HB_BUSAVG") |>
+  summarise(across(c(rt_price, da_price, demand_mw, wind_mw, solar_mw, gas_mw),
+                   ~ sum(is.na(.x)))) |>
+  knitr::kable(caption = "Missing hours, 2021–2025")
+```
+
+```{r}
+#| label: check-missing-months
+#| code-summary: "Code: missing hours by month"
+
+ercot |>
+  filter(hub == "HB_BUSAVG") |>
+  mutate(any_missing = if_any(c(demand_mw, wind_mw, solar_mw, gas_mw), is.na)) |>
+  count(year, month, wt = any_missing, name = "missing_hours") |>
+  filter(missing_hours > 0) |>
+  knitr::kable(caption = "Months with missing grid data")
+```
+
+**Findings:** No prices are missing. Demand is missing for 1 hour and generation
+for X hours; these are isolated gaps and are dropped.
+
+### Check 3: Are yearly prices plausible?
+
+```{r}
+#| label: check-yearly-prices
+#| code-summary: "Code: average price by year"
+
+ercot |>
+  group_by(year, hub) |>
+  summarise(avg_rt = mean(rt_price), avg_da = mean(da_price), .groups = "drop") |>
+  pivot_wider(names_from = hub, values_from = c(avg_rt, avg_da)) |>
+  select(year, avg_rt_HB_BUSAVG, avg_da_HB_BUSAVG, avg_rt_HB_WEST, avg_rt_HB_HOUSTON) |>
+  knitr::kable(digits = 1, caption = "Average price by year ($/MWh)")
+```
+
+**Findings:** Bus-average real-time prices fell from \$149/MWh in 2021 (Winter
+Storm Uri) to \$27 in 2024, then rose to \$32 in 2025, following natural gas
+prices. The 2023–2024 averages match Modo Energy's published figures within \$1.
 
 ## The grid over time
 
-- How have wind and solar output grown from 2021 to 2025?
-- What does an average day look like (demand, wind, solar, price by hour), and how does it differ between summer and winter?
+### How have wind and solar grown?
 
 ```{r}
-# Your code here
+#| label: grid-growth-chart
+#| code-summary: "Code: average generation by fuel and year"
+
+grid <- ercot |> filter(hub == "HB_BUSAVG")   # grid data repeats for every hub
+
+grid |>
+  group_by(year) |>
+  summarise(across(c(gas_mw, wind_mw, solar_mw, coal_mw, nuclear_mw, storage_mw),
+                   ~ mean(.x, na.rm = TRUE))) |>
+  pivot_longer(-year, names_to = "fuel", values_to = "avg_mw") |>
+  mutate(fuel = str_remove(fuel, "_mw") |> str_to_title()) |>
+  ggplot(aes(year, avg_mw, colour = fuel)) +
+  geom_line(linewidth = 1) +
+  geom_point() +
+  labs(x = NULL, y = "Average output (MW)", colour = NULL,
+       title = "Average ERCOT generation by fuel, 2021–2025")
 ```
 
-Findings:
+```{r}
+#| label: grid-growth-table
+#| code-summary: "Code: wind and solar share of demand by year"
+
+grid |>
+  group_by(year) |>
+  summarise(
+    wind_mw     = mean(wind_mw, na.rm = TRUE),
+    solar_mw    = mean(solar_mw, na.rm = TRUE),
+    demand_mw   = mean(demand_mw, na.rm = TRUE),
+    wind_share  = wind_mw / demand_mw,
+    solar_share = solar_mw / demand_mw
+  ) |>
+  knitr::kable(digits = c(0, 0, 0, 0, 3, 3),
+               caption = "Average output (MW) and share of demand")
+```
+
+**Findings:** Solar grew fast, more than four times larger from 2021 to 2025.
+By 2025 it produced more power than nuclear or coal. Wind grew a little (about
+20%). Gas is still the biggest source. Battery data only starts in late 2024,
+so storage is shown for 2025 only.
+
+### What does an average day look like?
+
+Summer is June–August and winter is December–February. Price uses the
+**median**, so a few extreme hours (like Winter Storm Uri) don't distort the
+daily shape.
+
+```{r}
+#| label: grid-daily-profile
+#| code-summary: "Code: average day by season"
+#| fig-height: 7
+
+daily <- grid |>
+  mutate(season = case_when(
+    month(time_local) %in% 6:8       ~ "Summer",
+    month(time_local) %in% c(12, 1, 2) ~ "Winter"
+  )) |>
+  filter(!is.na(season)) |>
+  group_by(season, hour_local) |>
+  summarise(
+    `Demand (MW)`       = mean(demand_mw, na.rm = TRUE),
+    `Wind (MW)`         = mean(wind_mw, na.rm = TRUE),
+    `Solar (MW)`        = mean(solar_mw, na.rm = TRUE),
+    `Net load (MW)`     = mean(net_load_mw, na.rm = TRUE),
+    `Median RT price ($/MWh)` = median(rt_price),
+    .groups = "drop"
+  )
+
+daily |>
+  pivot_longer(-c(season, hour_local), names_to = "measure") |>
+  ggplot(aes(hour_local, value, colour = season)) +
+  geom_line(linewidth = 1) +
+  facet_wrap(~ measure, scales = "free_y", ncol = 2) +
+  labs(x = "Hour of day (Central)", y = NULL, colour = NULL,
+       title = "An average day on the ERCOT grid, summer vs. winter")
+```
+
+```{r}
+#| label: grid-daily-peaks
+#| code-summary: "Code: peak hours by season"
+
+daily |>
+  group_by(season) |>
+  summarise(
+    demand_peak_hour = hour_local[which.max(`Demand (MW)`)],
+    net_load_peak_hour = hour_local[which.max(`Net load (MW)`)],
+    price_peak_hour  = hour_local[which.max(`Median RT price ($/MWh)`)],
+    price_low_hour   = hour_local[which.min(`Median RT price ($/MWh)`)]
+  ) |>
+  knitr::kable(caption = "Hour of day when each measure peaks (Central)")
+```
+
+**Findings:** Power is most expensive in the evening, not when demand is
+highest. In summer, demand peaks around 5 p.m., but prices peak around 8 p.m.,
+after the sun sets and solar power drops off. In winter, prices are lowest in
+the afternoon, when solar is strongest. Wind does the opposite of solar: it
+blows hardest at night.
 
 ## Prices
 
-- What does the distribution of hourly real-time prices look like? Try a log scale, and count the negative-price hours.
-- How do the hubs differ? Why might HB_WEST be cheaper more often?
+### How are hourly prices distributed?
+
+Most hours are cheap, but a few are extremely expensive. A **pseudo-log** scale
+spreads out the cheap hours while still fitting the \$9,000 spikes and
+negative prices on one chart.
 
 ```{r}
-# Your code here
+#| label: prices-distribution
+#| code-summary: "Code: distribution of hourly prices"
+
+ercot |>
+  filter(hub == "HB_BUSAVG") |>
+  ggplot(aes(rt_price)) +
+  geom_histogram(bins = 80) +
+  scale_x_continuous(trans = scales::pseudo_log_trans(sigma = 10),
+                     breaks = c(-100, -10, 0, 10, 25, 50, 100, 1000, 9000)) +
+  labs(x = "Real-time price (\\$/MWh, pseudo-log scale)", y = "Hours",
+       title = "Hourly real-time prices at the bus-average hub, 2021–2025")
 ```
 
-Findings:
+```{r}
+#| label: prices-extremes
+#| code-summary: "Code: negative and extreme price hours by year"
+
+ercot |>
+  filter(hub == "HB_BUSAVG") |>
+  group_by(year) |>
+  summarise(
+    median_price   = median(rt_price),
+    mean_price     = mean(rt_price),
+    negative_hours = sum(rt_price < 0),
+    hours_over_1000 = sum(rt_price > 1000)
+  ) |>
+  knitr::kable(digits = 1, caption = "Real-time prices by year (bus-average hub)")
+```
+
+**Findings:** Most hours are cheap, around \$20–30/MWh. A small number of very
+expensive hours pull the average up to more than twice the median. The highest
+prices, about \$9,000/MWh, all came during Winter Storm Uri in February 2021,
+when regulators held prices at the cap; the cap was lowered to \$5,000 in 2022.
+Prices occasionally go below zero, when wind and solar produce more power than
+the grid needs.
+
+### How do the hubs differ?
+
+```{r}
+#| label: prices-hubs-table
+#| code-summary: "Code: price statistics by hub"
+
+ercot |>
+  group_by(hub) |>
+  summarise(
+    median_price  = median(rt_price),
+    mean_price    = mean(rt_price),
+    p95_price     = quantile(rt_price, 0.95),
+    pct_negative  = mean(rt_price < 0) * 100
+  ) |>
+  arrange(median_price) |>
+  knitr::kable(digits = 1, caption = "Real-time prices by hub, 2021–2025")
+```
+
+```{r}
+#| label: prices-west-vs-wind
+#| code-summary: "Code: West hub discount vs. wind output"
+
+west_vs_wind <- ercot |>
+  filter(hub %in% c("HB_WEST", "HB_BUSAVG")) |>
+  select(hour_start_utc, hub, rt_price, wind_mw) |>
+  pivot_wider(names_from = hub, values_from = rt_price) |>
+  mutate(wind_bin = cut(wind_mw, breaks = seq(0, 30000, 5000),
+                        labels = c("0–5k", "5–10k", "10–15k", "15–20k", "20–25k", "25–30k"))) |>
+  filter(!is.na(wind_bin)) |>
+  group_by(wind_bin) |>
+  summarise(west_minus_system = median(HB_WEST - HB_BUSAVG), hours = n())
+
+ggplot(west_vs_wind, aes(wind_bin, west_minus_system)) +
+  geom_col(fill = "grey40") +
+  geom_hline(yintercept = 0) +
+  geom_text(aes(label = sprintf("$%.2f", west_minus_system)),
+            vjust = ifelse(west_vs_wind$west_minus_system < 0, 1.5, -0.5)) +
+  geom_text(aes(y = 1.5, label = paste(scales::comma(hours), "hours")),
+            size = 3, colour = "grey30") +
+  scale_y_continuous(limits = c(min(west_vs_wind$west_minus_system) - 1.5, 2.5)) +
+  labs(x = "ERCOT wind output (MW)",
+       y = "West price minus statewide price ($/MWh, median)",
+       title = "West Texas power gets cheaper only on very windy hours",
+       subtitle = "Below 20,000 MW of wind, West and the rest of Texas pay about the same")
+```
+
+**Findings:** The West hub is priced the same as the rest of Texas until wind
+output passes about 20,000 MW. Above that, West is about \$6/MWh cheaper, and
+about \$10 cheaper above 25,000 MW. Most Texas wind farms are in West Texas,
+and on very windy hours the power lines carrying that power east fill up, so
+the extra power is stuck in the West and its price drops.
