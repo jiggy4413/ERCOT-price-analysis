@@ -28,9 +28,17 @@ dir_create(PROCESSED_DIR)
 # Turn an ERCOT local date + hour-ending (1-24) into the UTC start of that hour.
 # During the November fall-back, hour-ending 2 occurs twice; ERCOT marks the
 # second one with a repeated-hour flag of "Y".
+#
+# Central time is UTC-5 in daylight time (CDT) and UTC-6 in standard time (CST).
+# For each hour, try the CDT conversion; keep it if it maps back to the same clock
+# time during daylight time, otherwise use CST. The repeated November hour is the
+# only time both work: the first copy is CDT, the flagged second copy is CST.
 ercot_hour_start_utc <- function(date, hour_ending, repeated_flag = "N") {
-  naive <- as_datetime(date) + hours(as.integer(hour_ending) - 1)
-  first  <- force_tz(naive, LOCAL_TZ, roll_dst = c("post", "xfirst"))
-  second <- force_tz(naive, LOCAL_TZ, roll_dst = c("post", "xlast"))
-  with_tz(if_else(toupper(repeated_flag) == "Y", second, first), "UTC")
+  clock <- as_datetime(date) + hours(as.integer(hour_ending) - 1)  # local clock time, stored as if UTC
+  as_cdt <- clock + hours(5)
+  as_cst <- clock + hours(6)
+  local_cdt <- with_tz(as_cdt, LOCAL_TZ)
+  cdt_valid <- force_tz(local_cdt, "UTC") == clock & dst(local_cdt)
+  second_copy <- toupper(coalesce(as.character(repeated_flag), "N")) == "Y"
+  if_else(cdt_valid & !second_copy, as_cdt, as_cst)
 }
