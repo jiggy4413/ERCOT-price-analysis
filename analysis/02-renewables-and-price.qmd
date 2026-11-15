@@ -34,7 +34,7 @@ Findings:
 ## Model
 
 - Fit a regression of price on renewable share with controls for hour of day, month and year. Interpret the coefficient in $/MWh.
-- Does the effect differ by hub, by season, or between 2019 and 2025?
+- Does the effect differ by hub, by season, or between 2021 and 2025?
 - Prices have extreme spikes. How does using log price, or dropping Winter Storm Uri (Feb 2021), change the answer?
 
 ```{r}

@@ -12,7 +12,7 @@ suppressPackageStartupMessages({
 })
 
 # Study window (inclusive years). Change these to widen or narrow the study.
-YEARS <- 2019:2025
+YEARS <- 2021:2025
 
 # Trading hubs to keep. ERCOT also publishes load zones (LZ_*) if you want them later.
 HUBS <- c("HB_HOUSTON", "HB_NORTH", "HB_SOUTH", "HB_WEST", "HB_BUSAVG")

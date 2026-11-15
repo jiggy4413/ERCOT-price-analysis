@@ -4,7 +4,7 @@ Nothing in `data/` is committed to GitHub. Follow these steps to rebuild it.
 
 ## 1. ERCOT prices (manual download)
 
-ERCOT posts one file per year for each market. Download the years in your study window (2019–2025 by default) from:
+ERCOT posts one file per year for each market. Download the years in your study window (2021–2025 by default) from:
 
 | Market | ERCOT report | Save the .zip files to |
 |---|---|---|

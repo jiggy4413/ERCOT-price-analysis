@@ -24,7 +24,7 @@ ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
 ## Baselines first
 
 - Naive forecast: tomorrow's price equals the same hour today. Also try the same hour last week.
-- Use a time-based split: train on 2019-2023, test on 2024-2025. Never shuffle time series.
+- Use a time-based split: train on 2021-2023, test on 2024-2025. Never shuffle time series.
 
 ```{r}
 # Your code here

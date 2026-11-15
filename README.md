@@ -6,7 +6,7 @@ How do wind and solar shape electricity prices on the Texas grid, and what is th
 
 ## Questions
 
-1. **Do wind and solar lower prices?** How much does the hourly price fall as the renewable share of demand rises, and has that changed from 2019 to 2025?
+1. **Do wind and solar lower prices?** How much does the hourly price fall as the renewable share of demand rises, and has that changed from 2021 to 2025?
 2. **What drives price spikes?** When do the most expensive hours happen, including Winter Storm Uri (February 2021), and what do they have in common?
 3. **Would a battery have made money?** Backtest a battery that charges in cheap hours and discharges in expensive ones, at each trading hub.
 4. **Can day-ahead prices be forecast?** Build a model and test it honestly against simple baselines.
@@ -22,7 +22,7 @@ _Coming soon._
 | ERCOT, Historical RTM and DAM Load Zone and Hub Prices | Real-time and day-ahead prices at the Houston, North, South, West and bus-average hubs | 15-minute (real-time), hourly (day-ahead) |
 | U.S. EIA, Hourly Electric Grid Monitor (EIA-930) | ERCOT demand and generation by fuel (wind, solar, gas, coal, nuclear, storage) | Hourly |
 
-Study window: 2019–2025. All times are stored in UTC and shown in Central time.
+Study window: 2021–2025. All times are stored in UTC and shown in Central time.
 
 ## How to run it
 

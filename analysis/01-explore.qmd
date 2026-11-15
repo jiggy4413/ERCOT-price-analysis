@@ -35,7 +35,7 @@ Findings:
 
 ## The grid over time
 
-- How have wind and solar output grown from 2019 to 2025?
+- How have wind and solar output grown from 2021 to 2025?
 - What does an average day look like (demand, wind, solar, price by hour), and how does it differ between summer and winter?
 
 ```{r}
