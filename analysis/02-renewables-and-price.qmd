@@ -1,6 +1,6 @@
 ---
 title: "Do wind and solar lower prices?"
-author: "Juan"
+author: "Juan Ignacio Mendez Valdez"
 format:
   html:
     code-fold: true
@@ -10,10 +10,13 @@ execute:
   message: false
 ---
 
-The main question of the project: when more of demand is met by wind and solar, how much lower is the price, and does that effect change over time?
+The main question of the project: when more of demand is met by wind and solar,
+how much lower is the price, and does that effect change over time?
 
 ```{r}
 #| label: setup
+#| code-summary: "Code: load packages and data"
+
 library(tidyverse)
 library(lubridate)
 
@@ -21,34 +24,247 @@ library(lubridate)
 ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
 ```
 
-## Look first
-
-- Scatter price against renewable share (or net load). Is the relationship straight, curved, or does it bend sharply at high net load?
-
 ```{r}
-# Your code here
+#| label: prep
+#| code-summary: "Code: prepare modeling data"
+
+base <- ercot |>
+  filter(hub == "HB_BUSAVG", !is.na(renewable_share)) |>
+  mutate(
+    hour_f  = factor(hour_local),
+    month_f = factor(month(time_local)),
+    year_f  = factor(year),
+    uri     = time_local >= as.POSIXct("2021-02-10", tz = "America/Chicago") &
+              time_local <  as.POSIXct("2021-02-21", tz = "America/Chicago"),
+    season  = case_when(month(time_local) %in% 6:8        ~ "Summer",
+                        month(time_local) %in% c(12, 1, 2) ~ "Winter",
+                        TRUE                               ~ "Spring/Fall")
+  )
+
+no_uri <- filter(base, !uri)
+
+# Effect of renewables on price, per 10 percentage points of renewable share
+effect <- function(model) {
+  tibble(
+    effect_per_10pp = coef(model)[["renewable_share"]] * 0.1,
+    std_error       = sqrt(diag(vcov(model)))[["renewable_share"]] * 0.1,
+    r_squared       = summary(model)$r.squared,
+    hours           = nobs(model)
+  )
+}
 ```
 
-Findings:
+## Look first
+
+### Price vs. renewable share
+
+```{r}
+#| label: look-share
+#| code-summary: "Code: median price by renewable share"
+
+no_uri |>
+  mutate(share_bin = cut(renewable_share, breaks = seq(0, 1, 0.1),
+                         labels = paste0(seq(0, 90, 10), "–", seq(10, 100, 10), "%"))) |>
+  filter(!is.na(share_bin)) |>
+  group_by(share_bin) |>
+  summarise(median_price = median(rt_price), hours = n()) |>
+  filter(hours >= 50) |>
+  ggplot(aes(share_bin, median_price)) +
+  geom_col(fill = "seagreen") +
+  geom_text(aes(label = paste0("$", round(median_price))), vjust = -0.4) +
+  geom_text(aes(y = 0, label = paste(scales::comma(hours), "hrs")),
+            vjust = 1.5, size = 3, colour = "grey30") +
+  labs(x = "Share of demand met by wind + solar",
+       y = "Typical (median) price, $/MWh",
+       title = "The more wind and solar, the cheaper the power")
+```
+*How to read: each bar groups hours by how much of demand wind and solar
+covered. Bar height is the typical price in those hours; the number below each
+bar is how many hours fall in that group.*
+
+**Findings:** As wind and solar supply more of demand, power gets cheaper. In
+hours when they cover 10–20% of demand, the typical price is about \$41/MWh;
+when they cover 50–60%, it falls to about \$15/MWh. This shows that renewables
+and lower prices go together; the Model section tests whether renewables are
+the cause.
+
+### Price vs. net load
+
+Net load is demand minus wind and solar: the power that gas, coal and nuclear
+plants still have to supply.
+
+```{r}
+#| label: look-net-load
+#| code-summary: "Code: median price by net load"
+
+no_uri |>
+  mutate(net_load_bin = cut(net_load_mw / 1000, breaks = seq(10, 70, 5),
+                            labels = paste0(seq(10, 65, 5), "–", seq(15, 70, 5)))) |>
+  filter(!is.na(net_load_bin)) |>
+  group_by(net_load_bin) |>
+  summarise(median_price = median(rt_price), hours = n()) |>
+  filter(hours >= 50) |>
+  ggplot(aes(net_load_bin, median_price)) +
+  geom_col(fill = "firebrick") +
+  geom_text(aes(label = paste0("$", round(median_price))), vjust = -0.4) +
+  geom_text(aes(y = 0, label = paste(scales::comma(hours), "hrs")),
+            vjust = 1.5, size = 3, colour = "grey30") +
+  labs(x = "Net load (thousand MW): the demand wind and solar don't cover",
+       y = "Typical (median) price, $/MWh",
+       title = "Prices stay low until the other power plants are stretched, then climb")
+```
+*How to read: each bar groups hours by net load, in thousands of MW. Bar height
+is the typical price in those hours.*
+
+**Findings:** Prices stay low across most net load levels, then rise sharply
+once net load passes about 60,000 MW. In the rare hours above 65,000 MW
+(129 hours), the typical price is about \$488/MWh, more than ten times the
+usual price of about \$41. The renewable share chart hides these spikes:
+those heat-wave evenings are mixed in with thousands of cheap low-renewable
+hours. Net load separates them, which makes it the better predictor of price.
 
 ## Model
 
-- Fit a regression of price on renewable share with controls for hour of day, month and year. Interpret the coefficient in $/MWh.
-- Does the effect differ by hub, by season, or between 2021 and 2025?
-- Prices have extreme spikes. How does using log price, or dropping Winter Storm Uri (Feb 2021), change the answer?
+### How much do renewables lower prices?
+
+Each model adds one thing:
+
+1. Renewable share alone.
+2. Adds hour, month and year, so the comparison is between hours that are
+   otherwise alike (same time of day, same season, same year).
+3. Model 2 without Winter Storm Uri.
+4. Model 3 using day-ahead instead of real-time prices.
 
 ```{r}
-# Your code here
+#| label: model-main
+#| code-summary: "Code: regression models"
+
+models <- list(
+  "1. Renewable share only"             = lm(rt_price ~ renewable_share, base),
+  "2. + hour, month, year controls"     = lm(rt_price ~ renewable_share + hour_f + month_f + year_f, base),
+  "3. Model 2 without Winter Storm Uri" = lm(rt_price ~ renewable_share + hour_f + month_f + year_f, no_uri),
+  "4. Model 3 with day-ahead price"     = lm(da_price ~ renewable_share + hour_f + month_f + year_f, no_uri)
+)
+
+map_dfr(models, effect, .id = "model") |>
+  knitr::kable(digits = c(0, 2, 2, 3, 0),
+               caption = "Change in price ($/MWh) for each 10-point rise in renewable share")
 ```
 
-Findings:
+**Findings:** More wind and solar means lower prices. After comparing only
+similar hours (same time of day, month and year) and removing Winter Storm Uri,
+each 10-point increase in wind and solar's share of demand lowers the real-time
+price by about \$12/MWh, and the day-ahead price by about \$9.50/MWh.
+
+Including Uri more than triples the estimate (to about \$42), because that one
+week combined very little wind and solar with \$9,000 prices. We use the
+estimate without Uri, since a single extreme event shouldn't drive the result.
+
+Renewable share explains only 6–10% of the hour-to-hour swings in price; most
+of the variation comes from rare price spikes that depend on other things, such
+as demand and power plant outages.
+
+### Has the effect changed over time?
+
+```{r}
+#| label: model-by-year
+#| code-summary: "Code: effect by year"
+
+by_year <- no_uri |>
+  group_by(year) |>
+  group_modify(~ effect(lm(rt_price ~ renewable_share + hour_f + month_f, data = .x))) |>
+  ungroup()
+
+ggplot(by_year, aes(factor(year), effect_per_10pp)) +
+  geom_col(fill = "grey40") +
+  geom_errorbar(aes(ymin = effect_per_10pp - 1.96 * std_error,
+                    ymax = effect_per_10pp + 1.96 * std_error), width = 0.2) +
+  geom_text(aes(label = paste0("$", round(effect_per_10pp, 1))),
+            vjust = ifelse(by_year$effect_per_10pp < 0, 1.8, -0.8), colour = "white") +
+  geom_hline(yintercept = 0) +
+  labs(x = NULL, y = "Price change per 10-point rise in renewable share ($/MWh)",
+       title = "Effect of renewables on price, by year")
+
+knitr::kable(by_year, digits = c(0, 2, 2, 3, 0), caption = "Effect by year")
+```
+
+**Findings:** Renewables lowered prices in every year, by about \$10–13/MWh per
+10-point increase, except in 2022, when the effect nearly doubled to about \$20.
+2022 was a year of expensive natural gas, so every MWh of wind and solar
+replaced costlier gas power and saved more. As gas got cheaper in 2023–2024,
+the effect shrank back.
+
+In 2025, renewables explain far more of the hour-to-hour price swings (23%,
+up from 7–10% in earlier years). As solar has grown, it has become a bigger
+driver of when power is cheap or expensive.
+
+### Does it differ by season or hub?
+
+```{r}
+#| label: model-by-season
+#| code-summary: "Code: effect by season"
+
+no_uri |>
+  group_by(season) |>
+  group_modify(~ effect(lm(rt_price ~ renewable_share + hour_f + year_f, data = .x))) |>
+  knitr::kable(digits = c(0, 2, 2, 3, 0), caption = "Effect by season")
+```
+
+```{r}
+#| label: model-by-hub
+#| code-summary: "Code: effect by hub"
+
+ercot |>
+  filter(!is.na(renewable_share)) |>
+  filter(!(time_local >= as.POSIXct("2021-02-10", tz = "America/Chicago") &
+           time_local <  as.POSIXct("2021-02-21", tz = "America/Chicago"))) |>
+  mutate(hour_f  = factor(hour_local),
+         month_f = factor(month(time_local)),
+         year_f  = factor(year)) |>
+  group_by(hub) |>
+  group_modify(~ effect(lm(rt_price ~ renewable_share + hour_f + month_f + year_f, data = .x))) |>
+  arrange(effect_per_10pp) |>
+  knitr::kable(digits = c(0, 2, 2, 3, 0), caption = "Effect by hub")
+```
+
+**Findings:** Renewables lower prices most in summer, about \$23/MWh per
+10-point increase, twice as much as in winter (\$10) or spring and fall (\$12).
+Summer is when the grid is tightest, so extra wind and solar keep expensive
+peaker plants switched off.
+
+West Texas sees the biggest drop (\$16/MWh), compared with \$11–12 at the
+other hubs. Most wind farms are in West Texas, and when power lines to the rest
+of the state fill up, the extra power stays local and pushes West prices down
+further. Houston, farthest from the wind farms, sees the smallest effect (\$11).
+
+**A note on uncertainty:** the uncertainty numbers in these tables assume each
+hour is independent, but neighboring hours are very similar (same weather, same
+power plants running). That makes the true uncertainty larger than shown. The
+conclusions don't change: the effects are far enough from zero that renewables
+clearly lower prices, but the exact dollar amounts should be read as estimates.
 
 ## Takeaway
 
-- Write two or three sentences a non-technical reader would understand.
+## Findings
 
-```{r}
-# Your code here
-```
+**Wind and solar lower Texas power prices, most of all when the grid is under
+strain.**
 
-Findings:
+- **Renewables are growing fast.** From 2021 to 2025, average solar output
+  grew more than fourfold, passing nuclear and coal; wind grew about 20%.
+- **They lower prices.** Each 10-point increase in wind and solar's share of
+  demand cuts the real-time price by about \$12/MWh (\$9.50 day-ahead),
+  comparing only similar hours and excluding Winter Storm Uri.
+- **The effect is biggest when the grid is tight.** In summer the drop is
+  about \$23/MWh, twice the winter effect. Prices stay low until the demand
+  left for gas, coal and nuclear plants passes about 60,000 MW, then climb
+  sharply, reaching a typical \$488/MWh in the rarest, tightest hours.
+- **Prices peak in the evening, not when demand is highest.** As solar fades
+  after sunset, other plants must fill the gap, so summer prices peak around
+  8 p.m., three hours after peak demand.
+- **Location matters.** West Texas, home to most wind farms, sees the largest
+  drop (\$16/MWh). On very windy hours, power lines to the rest of the state
+  fill up and West prices fall up to \$10 below the statewide price.
+- **The effect tracks gas prices.** It was largest in 2022, when natural gas
+  was expensive, and by 2025 renewables explained more than twice as much of
+  the hour-to-hour price swings as in earlier years.
