@@ -246,7 +246,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">r_squared       =</span> <span class="fu">summary</span>(model)<span class="sc">$</span>r.squared,</span>
 <span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">hours           =</span> <span class="fu">nobs</span>(model)</span>
 <span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Print effect tables with readable column names</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>show_effects <span class="ot">&lt;-</span> <span class="cf">function</span>(df, first_col, caption) {</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    df,</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">digits    =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">0</span>),</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">","</span>),</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">col.names =</span> <span class="fu">c</span>(first_col,</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"Price change per +10 points of wind and solar (</span><span class="sc">\\</span><span class="st">$/MWh)"</span>,</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"Uncertainty (± </span><span class="sc">\\</span><span class="st">$/MWh)"</span>,</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"Share of price swings explained (R²)"</span>,</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"Hours used"</span>),</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">caption   =</span> caption</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>hub_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">HB_NORTH =</span> <span class="st">"North (Dallas–Fort Worth)"</span>, <span class="at">HB_SOUTH =</span> <span class="st">"South (San Antonio, Austin)"</span>,</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>               <span class="at">HB_WEST =</span> <span class="st">"West (West Texas)"</span>, <span class="at">HB_HOUSTON =</span> <span class="st">"Houston"</span>,</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>               <span class="at">HB_BUSAVG =</span> <span class="st">"Statewide average"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
 <section id="look-first" class="level2">
@@ -339,26 +358,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">map_dfr</span>(models, effect, <span class="at">.id =</span> <span class="st">"model"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">0</span>),</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>               <span class="at">caption =</span> <span class="st">"Change in price ($/MWh) for each 10-point rise in renewable share"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show_effects</span>(<span class="st">"Model"</span>, <span class="st">"How much prices change as wind and solar increase"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
-<caption>Change in price ($/MWh) for each 10-point rise in renewable share</caption>
+<caption>How much prices change as wind and solar increase</caption>
 <colgroup>
-<col style="width: 46%">
-<col style="width: 20%">
-<col style="width: 12%">
-<col style="width: 12%">
-<col style="width: 7%">
+<col style="width: 22%">
+<col style="width: 33%">
+<col style="width: 14%">
+<col style="width: 22%">
+<col style="width: 6%">
 </colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;">model</th>
-<th style="text-align: right;">effect_per_10pp</th>
-<th style="text-align: right;">std_error</th>
-<th style="text-align: right;">r_squared</th>
-<th style="text-align: right;">hours</th>
+<th style="text-align: left;">Model</th>
+<th style="text-align: right;">Price change per +10 points of wind and solar ($/MWh)</th>
+<th style="text-align: right;">Uncertainty (± $/MWh)</th>
+<th style="text-align: right;">Share of price swings explained (R²)</th>
+<th style="text-align: right;">Hours used</th>
 </tr>
 </thead>
 <tbody>
@@ -367,28 +385,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td style="text-align: right;">-37.61</td>
 <td style="text-align: right;">1.39</td>
 <td style="text-align: right;">0.016</td>
-<td style="text-align: right;">43795</td>
+<td style="text-align: right;">43,795</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">2. + hour, month, year controls</td>
 <td style="text-align: right;">-42.43</td>
 <td style="text-align: right;">1.59</td>
 <td style="text-align: right;">0.056</td>
-<td style="text-align: right;">43795</td>
+<td style="text-align: right;">43,795</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">3. Model 2 without Winter Storm Uri</td>
 <td style="text-align: right;">-12.39</td>
 <td style="text-align: right;">0.48</td>
 <td style="text-align: right;">0.057</td>
-<td style="text-align: right;">43531</td>
+<td style="text-align: right;">43,531</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">4. Model 3 with day-ahead price</td>
 <td style="text-align: right;">-9.50</td>
 <td style="text-align: right;">0.39</td>
 <td style="text-align: right;">0.096</td>
-<td style="text-align: right;">43531</td>
+<td style="text-align: right;">43,531</td>
 </tr>
 </tbody>
 </table>
@@ -427,55 +445,62 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <details class="code-fold">
 <summary>Code: effect by year</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(by_year, <span class="at">digits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">0</span>), <span class="at">caption =</span> <span class="st">"Effect by year"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">show_effects</span>(by_year, <span class="st">"Year"</span>, <span class="st">"Effect by year"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <caption>Effect by year</caption>
+<colgroup>
+<col style="width: 4%">
+<col style="width: 41%">
+<col style="width: 17%">
+<col style="width: 28%">
+<col style="width: 8%">
+</colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: right;">year</th>
-<th style="text-align: right;">effect_per_10pp</th>
-<th style="text-align: right;">std_error</th>
-<th style="text-align: right;">r_squared</th>
-<th style="text-align: right;">hours</th>
+<th style="text-align: right;">Year</th>
+<th style="text-align: right;">Price change per +10 points of wind and solar ($/MWh)</th>
+<th style="text-align: right;">Uncertainty (± $/MWh)</th>
+<th style="text-align: right;">Share of price swings explained (R²)</th>
+<th style="text-align: right;">Hours used</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: right;">2021</td>
+<td style="text-align: right;">2,021</td>
 <td style="text-align: right;">-10.34</td>
 <td style="text-align: right;">0.54</td>
 <td style="text-align: right;">0.101</td>
-<td style="text-align: right;">8495</td>
+<td style="text-align: right;">8,495</td>
 </tr>
 <tr class="even">
-<td style="text-align: right;">2022</td>
+<td style="text-align: right;">2,022</td>
 <td style="text-align: right;">-19.59</td>
 <td style="text-align: right;">1.38</td>
 <td style="text-align: right;">0.073</td>
-<td style="text-align: right;">8760</td>
+<td style="text-align: right;">8,760</td>
 </tr>
 <tr class="odd">
-<td style="text-align: right;">2023</td>
+<td style="text-align: right;">2,023</td>
 <td style="text-align: right;">-12.76</td>
 <td style="text-align: right;">1.92</td>
 <td style="text-align: right;">0.091</td>
-<td style="text-align: right;">8760</td>
+<td style="text-align: right;">8,760</td>
 </tr>
 <tr class="even">
-<td style="text-align: right;">2024</td>
+<td style="text-align: right;">2,024</td>
 <td style="text-align: right;">-10.15</td>
 <td style="text-align: right;">0.59</td>
 <td style="text-align: right;">0.081</td>
-<td style="text-align: right;">8780</td>
+<td style="text-align: right;">8,780</td>
 </tr>
 <tr class="odd">
-<td style="text-align: right;">2025</td>
+<td style="text-align: right;">2,025</td>
 <td style="text-align: right;">-11.13</td>
 <td style="text-align: right;">0.29</td>
 <td style="text-align: right;">0.231</td>
-<td style="text-align: right;">8736</td>
+<td style="text-align: right;">8,736</td>
 </tr>
 </tbody>
 </table>
@@ -492,18 +517,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>no_uri <span class="sc">|&gt;</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(season) <span class="sc">|&gt;</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_modify</span>(<span class="sc">~</span> <span class="fu">effect</span>(<span class="fu">lm</span>(rt_price <span class="sc">~</span> renewable_share <span class="sc">+</span> hour_f <span class="sc">+</span> year_f, <span class="at">data =</span> .x))) <span class="sc">|&gt;</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">0</span>), <span class="at">caption =</span> <span class="st">"Effect by season"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show_effects</span>(<span class="st">"Season"</span>, <span class="st">"Effect by season"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <caption>Effect by season</caption>
+<colgroup>
+<col style="width: 8%">
+<col style="width: 39%">
+<col style="width: 16%">
+<col style="width: 26%">
+<col style="width: 7%">
+</colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;">season</th>
-<th style="text-align: right;">effect_per_10pp</th>
-<th style="text-align: right;">std_error</th>
-<th style="text-align: right;">r_squared</th>
-<th style="text-align: right;">hours</th>
+<th style="text-align: left;">Season</th>
+<th style="text-align: right;">Price change per +10 points of wind and solar ($/MWh)</th>
+<th style="text-align: right;">Uncertainty (± $/MWh)</th>
+<th style="text-align: right;">Share of price swings explained (R²)</th>
+<th style="text-align: right;">Hours used</th>
 </tr>
 </thead>
 <tbody>
@@ -512,21 +544,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td style="text-align: right;">-11.56</td>
 <td style="text-align: right;">0.45</td>
 <td style="text-align: right;">0.064</td>
-<td style="text-align: right;">21956</td>
+<td style="text-align: right;">21,956</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Summer</td>
 <td style="text-align: right;">-23.44</td>
 <td style="text-align: right;">1.95</td>
 <td style="text-align: right;">0.075</td>
-<td style="text-align: right;">11039</td>
+<td style="text-align: right;">11,039</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">Winter</td>
 <td style="text-align: right;">-10.06</td>
 <td style="text-align: right;">0.47</td>
 <td style="text-align: right;">0.071</td>
-<td style="text-align: right;">10536</td>
+<td style="text-align: right;">10,536</td>
 </tr>
 </tbody>
 </table>
@@ -545,55 +577,63 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(hub) <span class="sc">|&gt;</span></span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_modify</span>(<span class="sc">~</span> <span class="fu">effect</span>(<span class="fu">lm</span>(rt_price <span class="sc">~</span> renewable_share <span class="sc">+</span> hour_f <span class="sc">+</span> month_f <span class="sc">+</span> year_f, <span class="at">data =</span> .x))) <span class="sc">|&gt;</span></span>
 <span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(effect_per_10pp) <span class="sc">|&gt;</span></span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">digits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">0</span>), <span class="at">caption =</span> <span class="st">"Effect by hub"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">hub =</span> hub_names[hub]) <span class="sc">|&gt;</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">show_effects</span>(<span class="st">"Hub"</span>, <span class="st">"Effect by hub"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <caption>Effect by hub</caption>
+<colgroup>
+<col style="width: 18%">
+<col style="width: 35%">
+<col style="width: 14%">
+<col style="width: 24%">
+<col style="width: 7%">
+</colgroup>
 <thead>
 <tr class="header">
-<th style="text-align: left;">hub</th>
-<th style="text-align: right;">effect_per_10pp</th>
-<th style="text-align: right;">std_error</th>
-<th style="text-align: right;">r_squared</th>
-<th style="text-align: right;">hours</th>
+<th style="text-align: left;">Hub</th>
+<th style="text-align: right;">Price change per +10 points of wind and solar ($/MWh)</th>
+<th style="text-align: right;">Uncertainty (± $/MWh)</th>
+<th style="text-align: right;">Share of price swings explained (R²)</th>
+<th style="text-align: right;">Hours used</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">HB_WEST</td>
+<td style="text-align: left;">West (West Texas)</td>
 <td style="text-align: right;">-16.02</td>
 <td style="text-align: right;">0.49</td>
 <td style="text-align: right;">0.063</td>
-<td style="text-align: right;">43531</td>
+<td style="text-align: right;">43,531</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">HB_BUSAVG</td>
+<td style="text-align: left;">Statewide average</td>
 <td style="text-align: right;">-12.39</td>
 <td style="text-align: right;">0.48</td>
 <td style="text-align: right;">0.057</td>
-<td style="text-align: right;">43531</td>
+<td style="text-align: right;">43,531</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">HB_NORTH</td>
+<td style="text-align: left;">North (Dallas–Fort Worth)</td>
 <td style="text-align: right;">-12.13</td>
 <td style="text-align: right;">0.49</td>
 <td style="text-align: right;">0.054</td>
-<td style="text-align: right;">43531</td>
+<td style="text-align: right;">43,531</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">HB_SOUTH</td>
+<td style="text-align: left;">South (San Antonio, Austin)</td>
 <td style="text-align: right;">-11.88</td>
 <td style="text-align: right;">0.45</td>
 <td style="text-align: right;">0.058</td>
-<td style="text-align: right;">43531</td>
+<td style="text-align: right;">43,531</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">HB_HOUSTON</td>
+<td style="text-align: left;">Houston</td>
 <td style="text-align: right;">-11.04</td>
 <td style="text-align: right;">0.51</td>
 <td style="text-align: right;">0.054</td>
-<td style="text-align: right;">43531</td>
+<td style="text-align: right;">43,531</td>
 </tr>
 </tbody>
 </table>
@@ -611,7 +651,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><strong>Renewables are growing fast.</strong> From 2021 to 2025, average solar output grew more than fourfold, passing nuclear and coal; wind grew about 20%.</li>
 <li><strong>They lower prices.</strong> Each 10-point increase in wind and solar’s share of demand cuts the real-time price by about $12/MWh ($9.50 day-ahead), comparing only similar hours and excluding Winter Storm Uri.</li>
 <li><strong>The effect is biggest when the grid is tight.</strong> In summer the drop is about $23/MWh, twice the winter effect. Prices stay low until the demand left for gas, coal and nuclear plants passes about 60,000 MW, then climb sharply, reaching a typical $488/MWh in the rarest, tightest hours.</li>
-<li><strong>Prices peak in the evening, not when demand is highest.</strong> As solar fades after sunset, other plants must fill the gap, so summer prices peak around 8 p.m., three hours after peak demand.</li>
+<li><strong>Prices peak in the evening, not when demand is highest.</strong> Summer demand peaks around 4–5 p.m., but prices peak around 7–8 p.m. As solar output falls in the early evening, gas and other plants must fill the gap, so prices rise even as demand starts to drop.</li>
 <li><strong>Location matters.</strong> West Texas, home to most wind farms, sees the largest drop ($16/MWh). On very windy hours, power lines to the rest of the state fill up and West prices fall up to $10 below the statewide price.</li>
 <li><strong>The effect tracks gas prices.</strong> It was largest in 2022, when natural gas was expensive, and by 2025 renewables explained more than twice as much of the hour-to-hour price swings as in earlier years.</li>
 </ul>
@@ -693,7 +733,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
+        var filterRegex = new RegExp("https:\/\/jiggy4413\.github\.io\/ERCOT-price-analysis\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }

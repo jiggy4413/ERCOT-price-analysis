@@ -173,7 +173,7 @@ ul.task-list li input[type="checkbox"] {
 <li><strong>Renewables are growing fast.</strong> From 2021 to 2025, average solar output grew more than fourfold, passing nuclear and coal; wind grew about 20%.</li>
 <li><strong>They lower prices.</strong> Each 10-point increase in wind and solar’s share of demand cuts the real-time price by about $12/MWh ($9.50 day-ahead), comparing only similar hours and excluding Winter Storm Uri.</li>
 <li><strong>The effect is biggest when the grid is tight.</strong> In summer the drop is about $23/MWh, twice the winter effect. Prices stay low until the demand left for gas, coal and nuclear plants passes about 60,000 MW, then climb sharply, reaching a typical $488/MWh in the rarest, tightest hours.</li>
-<li><strong>Prices peak in the evening, not when demand is highest.</strong> As solar fades after sunset, other plants must fill the gap, so summer prices peak around 8 p.m., three hours after peak demand.</li>
+<li><strong>Prices peak in the evening, not when demand is highest.</strong> Summer demand peaks around 4–5 p.m., but prices peak around 7–8 p.m. As solar output falls in the early evening, gas and other plants must fill the gap, so prices rise even as demand starts to drop.</li>
 <li><strong>Location matters.</strong> West Texas, home to most wind farms, sees the largest drop ($16/MWh). On very windy hours, power lines to the rest of the state fill up and West prices fall up to $10 below the statewide price.</li>
 <li><strong>The effect tracks gas prices.</strong> It was largest in 2022, when natural gas was expensive, and by 2025 renewables explained more than twice as much of the hour-to-hour price swings as in earlier years.</li>
 </ul>
@@ -268,7 +268,7 @@ ul.task-list li input[type="checkbox"] {
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
+        var filterRegex = new RegExp("https:\/\/jiggy4413\.github\.io\/ERCOT-price-analysis\/");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
