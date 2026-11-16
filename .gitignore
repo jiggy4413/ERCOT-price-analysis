@@ -16,3 +16,6 @@ data/processed/
 .RData
 .Ruserdata
 .DS_Store
+
+# Quarto website output (published to the gh-pages branch, not main)
+_site/
