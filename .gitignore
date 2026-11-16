@@ -19,3 +19,6 @@ data/processed/
 
 # Quarto website output (published to the gh-pages branch, not main)
 _site/
+
+/.quarto/
+**/*.quarto_ipynb
