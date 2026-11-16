@@ -10,7 +10,8 @@ execute:
   message: false
 ---
 
-Get to know the data before modeling anything. Every chart here should end with one sentence saying what it shows.
+A first look at five years of ERCOT data (2021–2025): checking that it is
+reliable, how the grid has changed, and how prices behave.
 
 ```{r}
 #| label: setup
@@ -56,7 +57,9 @@ ercot |>
   filter(hub == "HB_BUSAVG") |>
   summarise(across(c(rt_price, da_price, demand_mw, wind_mw, solar_mw, gas_mw),
                    ~ sum(is.na(.x)))) |>
-  knitr::kable(caption = "Missing hours, 2021–2025")
+  knitr::kable(col.names = c("Real-time price", "Day-ahead price", "Demand",
+                             "Wind", "Solar", "Gas"),
+               caption = "Missing hours, 2021–2025")
 ```
 
 ```{r}
@@ -68,11 +71,13 @@ ercot |>
   mutate(any_missing = if_any(c(demand_mw, wind_mw, solar_mw, gas_mw), is.na)) |>
   count(year, month, wt = any_missing, name = "missing_hours") |>
   filter(missing_hours > 0) |>
-  knitr::kable(caption = "Months with missing grid data")
+  knitr::kable(col.names = c("Year", "Month", "Hours missing"),
+               caption = "Months with missing grid data")
 ```
 
-**Findings:** No prices are missing. Demand is missing for 1 hour and generation
-for X hours; these are isolated gaps and are dropped.
+**Findings:** No prices are missing. Demand is missing for 1 hour, and wind,
+solar and gas for 24–28 hours, mostly a single day in December 2025. These gaps
+are small, so those hours are simply dropped.
 
 ### Check 3: Are yearly prices plausible?
 
@@ -85,7 +90,10 @@ ercot |>
   summarise(avg_rt = mean(rt_price), avg_da = mean(da_price), .groups = "drop") |>
   pivot_wider(names_from = hub, values_from = c(avg_rt, avg_da)) |>
   select(year, avg_rt_HB_BUSAVG, avg_da_HB_BUSAVG, avg_rt_HB_WEST, avg_rt_HB_HOUSTON) |>
-  knitr::kable(digits = 1, caption = "Average price by year ($/MWh)")
+  knitr::kable(digits = 1,
+               col.names = c("Year", "Statewide real-time", "Statewide day-ahead",
+                             "West real-time", "Houston real-time"),
+               caption = "Average price by year (\\$/MWh)")
 ```
 
 **Findings:** Bus-average real-time prices fell from \$149/MWh in 2021 (Winter
@@ -106,6 +114,8 @@ grid |>
   group_by(year) |>
   summarise(across(c(gas_mw, wind_mw, solar_mw, coal_mw, nuclear_mw, storage_mw),
                    ~ mean(.x, na.rm = TRUE))) |>
+  # Battery data only starts in late 2024, so show storage for 2025 only
+  mutate(storage_mw = if_else(year < 2025, NA_real_, storage_mw)) |>
   pivot_longer(-year, names_to = "fuel", values_to = "avg_mw") |>
   mutate(fuel = str_remove(fuel, "_mw") |> str_to_title()) |>
   ggplot(aes(year, avg_mw, colour = fuel)) +
@@ -125,11 +135,14 @@ grid |>
     wind_mw     = mean(wind_mw, na.rm = TRUE),
     solar_mw    = mean(solar_mw, na.rm = TRUE),
     demand_mw   = mean(demand_mw, na.rm = TRUE),
-    wind_share  = wind_mw / demand_mw,
-    solar_share = solar_mw / demand_mw
+    wind_share  = wind_mw / demand_mw * 100,
+    solar_share = solar_mw / demand_mw * 100
   ) |>
-  knitr::kable(digits = c(0, 0, 0, 0, 3, 3),
-               caption = "Average output (MW) and share of demand")
+  knitr::kable(digits = c(0, 0, 0, 0, 1, 1),
+               format.args = list(big.mark = ","),
+               col.names = c("Year", "Wind (MW)", "Solar (MW)", "Demand (MW)",
+                             "Wind share of demand (%)", "Solar share of demand (%)"),
+               caption = "Average output and share of demand")
 ```
 
 **Findings:** Solar grew fast, more than four times larger from 2021 to 2025.
@@ -177,6 +190,8 @@ daily |>
 #| label: grid-daily-peaks
 #| code-summary: "Code: peak hours by season"
 
+clock <- function(h) paste0(ifelse(h %% 12 == 0, 12, h %% 12), ifelse(h < 12, " a.m.", " p.m."))
+
 daily |>
   group_by(season) |>
   summarise(
@@ -185,7 +200,10 @@ daily |>
     price_peak_hour  = hour_local[which.max(`Median RT price ($/MWh)`)],
     price_low_hour   = hour_local[which.min(`Median RT price ($/MWh)`)]
   ) |>
-  knitr::kable(caption = "Hour of day when each measure peaks (Central)")
+  mutate(across(-season, clock)) |>
+  knitr::kable(col.names = c("Season", "Demand peaks", "Net load peaks",
+                             "Price peaks", "Price lowest"),
+               caption = "Hour when each measure peaks (start of the hour, Central time)")
 ```
 
 **Findings:** Power is most expensive in the evening, not when demand is
@@ -212,7 +230,7 @@ ercot |>
   geom_histogram(bins = 80) +
   scale_x_continuous(trans = scales::pseudo_log_trans(sigma = 10),
                      breaks = c(-100, -10, 0, 10, 25, 50, 100, 1000, 9000)) +
-  labs(x = "Real-time price (\\$/MWh, pseudo-log scale)", y = "Hours",
+  labs(x = "Real-time price ($/MWh, pseudo-log scale)", y = "Hours",
        title = "Hourly real-time prices at the bus-average hub, 2021–2025")
 ```
 
@@ -229,7 +247,10 @@ ercot |>
     negative_hours = sum(rt_price < 0),
     hours_over_1000 = sum(rt_price > 1000)
   ) |>
-  knitr::kable(digits = 1, caption = "Real-time prices by year (bus-average hub)")
+  knitr::kable(digits = 1,
+               col.names = c("Year", "Median price (\\$/MWh)", "Average price (\\$/MWh)",
+                             "Hours below \\$0", "Hours above \\$1,000"),
+               caption = "Real-time prices by year (statewide average)")
 ```
 
 **Findings:** Most hours are cheap, around \$20–30/MWh. A small number of very
@@ -254,7 +275,16 @@ ercot |>
     pct_negative  = mean(rt_price < 0) * 100
   ) |>
   arrange(median_price) |>
-  knitr::kable(digits = 1, caption = "Real-time prices by hub, 2021–2025")
+  mutate(hub = recode(hub,
+                      HB_NORTH   = "North (Dallas–Fort Worth)",
+                      HB_SOUTH   = "South (San Antonio, Austin)",
+                      HB_WEST    = "West (West Texas)",
+                      HB_HOUSTON = "Houston",
+                      HB_BUSAVG  = "Statewide average")) |>
+  knitr::kable(digits = 1,
+               col.names = c("Hub", "Median price (\\$/MWh)", "Average price (\\$/MWh)",
+                             "95th percentile (\\$/MWh)", "% of hours below \\$0"),
+               caption = "Real-time prices by hub, 2021–2025")
 ```
 
 ```{r}
@@ -289,4 +319,6 @@ ggplot(west_vs_wind, aes(wind_bin, west_minus_system)) +
 output passes about 20,000 MW. Above that, West is about \$6/MWh cheaper, and
 about \$10 cheaper above 25,000 MW. Most Texas wind farms are in West Texas,
 and on very windy hours the power lines carrying that power east fill up, so
-the extra power is stuck in the West and its price drops.
+the extra power is stuck in the West and its price drops. West prices also go
+below zero far more often: in 9.2% of hours, compared with about 2% at the
+other hubs.

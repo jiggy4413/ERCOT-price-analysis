@@ -7,7 +7,7 @@ How do wind and solar shape electricity prices on the Texas grid, and what is th
 ## Questions
 
 1. **Do wind and solar lower prices?** How much does the hourly price fall as the renewable share of demand rises, and has that changed from 2021 to 2025?
-2. **Can renewables help forecast prices?** Does knowing how much wind and solar there will be make day-ahead price forecasts better than simple baselines?
+2. **Does net load help forecast prices?** Does knowing net load (demand minus wind and solar) make day-ahead price forecasts better than simple baselines?
 3. **Would a battery have made money?** Backtest a battery that charges in cheap hours and discharges in expensive ones, using the earlier findings and the forecast to choose when.
 
 ## Findings

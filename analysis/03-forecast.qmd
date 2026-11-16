@@ -1,5 +1,5 @@
 ---
-title: "Can renewables help forecast prices?"
+title: "Does net load help forecast prices?"
 author: "Juan Ignacio Mendez Valdez"
 format:
   html:
@@ -10,9 +10,10 @@ execute:
   message: false
 ---
 
-Notebook 02 showed that wind and solar lower prices. This notebook asks whether
-that is useful in practice: if you know how much wind and solar there will be
-tomorrow, can you forecast tomorrow's day-ahead prices better?
+Notebook 02 showed that wind and solar lower prices, and that prices depend on
+net load (demand minus wind and solar). This notebook asks whether that is
+useful in practice: if you know tomorrow's net load, can you forecast
+tomorrow's day-ahead prices better?
 
 ## Key terms
 
@@ -134,8 +135,8 @@ accuracy <- forecasts_long |>
   mutate(vs_yesterday = (1 - mae / mae[model == "Same hour yesterday"]) * 100)
 
 knitr::kable(accuracy, digits = 1,
-             col.names = c("Forecast", "MAE ($/MWh)", "RMSE ($/MWh)",
-                           "Typical miss ($/MWh, median)", "Improvement vs. yesterday (%)"),
+             col.names = c("Forecast", "MAE (\\$/MWh)", "RMSE (\\$/MWh)",
+                           "Typical miss (\\$/MWh, median)", "Improvement vs. yesterday (%)"),
              caption = "Forecast errors, 2024–2025 (lower is better)")
 ```
 
@@ -154,10 +155,9 @@ ggplot(accuracy, aes(reorder(model, -mae), mae)) +
 "same price as yesterday", was the most accurate, missing by about \$13/MWh on
 average. Our regression models did not beat it.
 
-Still, adding wind, solar and demand to the model made its forecasts better.
-This supports what notebook 02 found: wind and solar affect prices, so knowing
-how much there will be helps predict them. A better model would be needed to
-turn that into forecasts that beat the simple guess.
+Adding net load (demand minus wind and solar) did make the regression model
+better: its average miss dropped from about \$22 to \$20. So this information
+helps, but not enough to beat the simple guess on average.
 
 ## What the forecasts look like
 
@@ -227,7 +227,7 @@ forecasts_long |>
   select(model, starts_with("mae")) |>
   knitr::kable(digits = 1,
                col.names = c("Forecast", "MAE: expensive hours", "MAE: normal hours"),
-               caption = "Average miss ($/MWh) on normal vs. expensive hours")
+               caption = "Average miss (\\$/MWh) on normal vs. expensive hours")
 ```
 
 **Findings:** All forecasts miss most around 7 p.m., when solar fades and
@@ -237,13 +237,12 @@ Which forecast is best depends on the hour. On normal hours, "same as
 yesterday" is the most accurate, off by about \$10/MWh. On expensive hours
 (above \$100/MWh), the model with net load is the most accurate, off by about
 \$119/MWh compared with \$172 for "same as yesterday". Net load helps most in
-the afternoon, when solar is strongest: knowing how much solar there will be
-lets the model predict those hours much better.
+the afternoon, when solar output is highest.
 
 ## Takeaway
 
 **Findings:** No single forecast was best everywhere. A simple rule ("same
 price as yesterday") worked best on ordinary hours, while the model with net
 load worked best on the expensive hours that matter most. This supports
-notebook 02: knowing how much wind and solar there will be helps predict the
+notebook 02: knowing net load (demand minus wind and solar) helps predict the
 hours when power is most expensive.

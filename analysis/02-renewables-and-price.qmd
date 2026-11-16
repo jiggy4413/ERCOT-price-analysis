@@ -52,6 +52,25 @@ effect <- function(model) {
     hours           = nobs(model)
   )
 }
+
+# Print effect tables with readable column names
+show_effects <- function(df, first_col, caption) {
+  knitr::kable(
+    df,
+    digits    = c(0, 2, 2, 3, 0),
+    format.args = list(big.mark = ","),
+    col.names = c(first_col,
+                  "Price change per +10 points of wind and solar (\\$/MWh)",
+                  "Uncertainty (± \\$/MWh)",
+                  "Share of price swings explained (R²)",
+                  "Hours used"),
+    caption   = caption
+  )
+}
+
+hub_names <- c(HB_NORTH = "North (Dallas–Fort Worth)", HB_SOUTH = "South (San Antonio, Austin)",
+               HB_WEST = "West (West Texas)", HB_HOUSTON = "Houston",
+               HB_BUSAVG = "Statewide average")
 ```
 
 ## Look first
@@ -147,8 +166,7 @@ models <- list(
 )
 
 map_dfr(models, effect, .id = "model") |>
-  knitr::kable(digits = c(0, 2, 2, 3, 0),
-               caption = "Change in price ($/MWh) for each 10-point rise in renewable share")
+  show_effects("Model", "How much prices change as wind and solar increase")
 ```
 
 **Findings:** More wind and solar means lower prices. After comparing only
@@ -185,7 +203,7 @@ ggplot(by_year, aes(factor(year), effect_per_10pp)) +
   labs(x = NULL, y = "Price change per 10-point rise in renewable share ($/MWh)",
        title = "Effect of renewables on price, by year")
 
-knitr::kable(by_year, digits = c(0, 2, 2, 3, 0), caption = "Effect by year")
+show_effects(by_year, "Year", "Effect by year")
 ```
 
 **Findings:** Renewables lowered prices in every year, by about \$10–13/MWh per
@@ -207,7 +225,7 @@ driver of when power is cheap or expensive.
 no_uri |>
   group_by(season) |>
   group_modify(~ effect(lm(rt_price ~ renewable_share + hour_f + year_f, data = .x))) |>
-  knitr::kable(digits = c(0, 2, 2, 3, 0), caption = "Effect by season")
+  show_effects("Season", "Effect by season")
 ```
 
 ```{r}
@@ -224,7 +242,8 @@ ercot |>
   group_by(hub) |>
   group_modify(~ effect(lm(rt_price ~ renewable_share + hour_f + month_f + year_f, data = .x))) |>
   arrange(effect_per_10pp) |>
-  knitr::kable(digits = c(0, 2, 2, 3, 0), caption = "Effect by hub")
+  mutate(hub = hub_names[hub]) |>
+  show_effects("Hub", "Effect by hub")
 ```
 
 **Findings:** Renewables lower prices most in summer, about \$23/MWh per
