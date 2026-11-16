@@ -189,8 +189,8 @@ daily |>
 ```
 
 **Findings:** Power is most expensive in the evening, not when demand is
-highest. In summer, demand peaks around 5 p.m., but prices peak around 8 p.m.,
-after the sun sets and solar power drops off. In winter, prices are lowest in
+highest. In summer, demand peaks around 4–5 p.m., but prices peak around
+7–8 p.m., as solar power drops off in the early evening. In winter, prices are lowest in
 the afternoon, when solar is strongest. Wind does the opposite of solar: it
 blows hardest at night.
 

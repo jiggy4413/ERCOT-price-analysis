@@ -257,9 +257,10 @@ strain.**
   about \$23/MWh, twice the winter effect. Prices stay low until the demand
   left for gas, coal and nuclear plants passes about 60,000 MW, then climb
   sharply, reaching a typical \$488/MWh in the rarest, tightest hours.
-- **Prices peak in the evening, not when demand is highest.** As solar fades
-  after sunset, other plants must fill the gap, so summer prices peak around
-  8 p.m., three hours after peak demand.
+- **Prices peak in the evening, not when demand is highest.** Summer demand
+  peaks around 4–5 p.m., but prices peak around 7–8 p.m. As solar output falls
+  in the early evening, gas and other plants must fill the gap, so prices rise
+  even as demand starts to drop.
 - **Location matters.** West Texas, home to most wind farms, sees the largest
   drop (\$16/MWh). On very windy hours, power lines to the rest of the state
   fill up and West prices fall up to \$10 below the statewide price.
