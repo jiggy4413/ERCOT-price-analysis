@@ -24,12 +24,27 @@ _Coming soon._
 
 Study window: 2021–2025. All times are stored in UTC and shown in Central time.
 
+## Getting the data
+
+The data is not stored in this repository: it is public and free to download, and the files are large. To rebuild it:
+
+1. **ERCOT prices (manual download).** Download the 2021–2025 yearly files from each page and save them, still zipped or as `.xlsx`:
+
+   | Market | ERCOT report | Save to |
+   |---|---|---|
+   | Real-time | [Historical RTM Load Zone and Hub Prices (NP6-785-ER)](https://www.ercot.com/mp/data-products/data-product-details?id=NP6-785-ER) | `data/raw/ercot-rtm/` |
+   | Day-ahead | [Historical DAM Load Zone and Hub Prices (NP4-180-ER)](https://www.ercot.com/mp/data-products/data-product-details?id=NP4-180-ER) | `data/raw/ercot-dam/` |
+
+2. **Grid data (automatic).** Register for a free [EIA API key](https://www.eia.gov/opendata/register.php), then copy `.Renviron.example` to `.Renviron` and add the key. The download script fetches the rest.
+
+More detail is in [`data/README.md`](data/README.md).
+
 ## How to run it
 
 1. Install R packages: `install.packages(c("tidyverse", "readxl", "janitor", "lubridate", "httr2", "fs", "here"))`
-2. Download the ERCOT price files and set up an EIA API key, following [`data/README.md`](data/README.md).
+2. Get the data (see above).
 3. Open `ERCOT-price-analysis.Rproj` and run `source("run_all.R")`. This builds `data/processed/ercot_hourly.rds`.
-4. Render the analysis: `quarto render analysis/`
+4. Preview the site with `quarto preview`, or render it with `quarto render`.
 
 ## Project structure
 

@@ -42,5 +42,6 @@ and forecasting day-ahead prices.
 
 Hourly real-time and day-ahead prices at ERCOT's trading hubs (ERCOT), and
 hourly demand and generation by fuel (U.S. Energy Information Administration,
-EIA-930). Code and setup instructions are on
-[GitHub](https://github.com/jiggy4413/ERCOT-price-analysis).
+EIA-930). Both are public and free; the data is not stored in the repository,
+but [the README](https://github.com/jiggy4413/ERCOT-price-analysis#getting-the-data)
+explains how to download it and rebuild every result.
