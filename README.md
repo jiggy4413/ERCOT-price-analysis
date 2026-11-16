@@ -12,7 +12,7 @@ How do wind and solar shape electricity prices on the Texas grid, and what is th
 
 ## Findings
 
-_Coming soon._
+(https://jiggy4413.github.io/ERCOT-price-analysis/)
 
 ## Data
 
