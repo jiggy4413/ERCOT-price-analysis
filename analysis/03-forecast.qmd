@@ -150,7 +150,14 @@ ggplot(accuracy, aes(reorder(model, -mae), mae)) +
        title = "Average forecast error on 2024–2025")
 ```
 
-**Findings:**
+**Findings:** Electricity prices are hard to predict. The simplest guess,
+"same price as yesterday", was the most accurate, missing by about \$13/MWh on
+average. Our regression models did not beat it.
+
+Still, adding wind, solar and demand to the model made its forecasts better.
+This supports what notebook 02 found: wind and solar affect prices, so knowing
+how much there will be helps predict them. A better model would be needed to
+turn that into forecasts that beat the simple guess.
 
 ## What the forecasts look like
 
@@ -159,7 +166,7 @@ One summer week in 2024. The black line is the actual day-ahead price.
 ```{r}
 #| label: example-week
 #| code-summary: "Code: forecasts vs. actual for one week"
-#| fig-height: 5
+#| fig-height: 7
 
 week_start <- as.POSIXct("2024-08-18", tz = "America/Chicago")
 
@@ -167,16 +174,29 @@ forecasts_long |>
   filter(time_local >= week_start, time_local < week_start + days(7),
          model %in% c("Same hour yesterday", "Time patterns + net load")) |>
   ggplot(aes(time_local)) +
-  geom_line(aes(y = da_price, colour = "Actual price"), linewidth = 1) +
-  geom_line(aes(y = forecast, colour = model), linewidth = 0.7, alpha = 0.8) +
-  scale_colour_manual(values = c("Actual price" = "black",
-                                 "Same hour yesterday" = "grey60",
-                                 "Time patterns + net load" = "seagreen")) +
+  geom_line(aes(y = da_price, colour = "Actual price"), linewidth = 1.1) +
+  geom_line(aes(y = forecast, colour = "Forecast"), linewidth = 1.1,
+            linetype = "dashed") +
+  facet_wrap(~ model, ncol = 1) +
+  scale_colour_manual(values = c("Actual price" = "black", "Forecast" = "#E66100")) +
+  scale_x_datetime(date_breaks = "1 day", date_labels = "%a %b %d") +
   labs(x = NULL, y = "Day-ahead price ($/MWh)", colour = NULL,
-       title = "Forecasts vs. actual prices, Aug 18–24, 2024")
+       title = "Forecasts vs. actual prices, Aug 18–24, 2024") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top",
+        strip.text = element_text(face = "bold", size = 12),
+        panel.grid.minor = element_blank())
 ```
 
-**Findings:**
+**Findings:** The top panel shows the "same as yesterday" forecast. It follows
+normal hours closely, but it is always one day late on spikes: after the \$635
+spike on August 20, it predicted another one on August 21, when the price only
+reached about \$120.
+
+The bottom panel shows the regression model. It correctly expects prices to
+rise every evening, but it misjudges how much: it underestimated the biggest
+spikes (about \$290 instead of \$635) and guessed too high on calmer days later
+in the week.
 
 ## Where do the forecasts miss most?
 
@@ -210,8 +230,20 @@ forecasts_long |>
                caption = "Average miss ($/MWh) on normal vs. expensive hours")
 ```
 
-**Findings:**
+**Findings:** All forecasts miss most around 7 p.m., when solar fades and
+prices jump, and least overnight and at midday, when prices are steady.
+
+Which forecast is best depends on the hour. On normal hours, "same as
+yesterday" is the most accurate, off by about \$10/MWh. On expensive hours
+(above \$100/MWh), the model with net load is the most accurate, off by about
+\$119/MWh compared with \$172 for "same as yesterday". Net load helps most in
+the afternoon, when solar is strongest: knowing how much solar there will be
+lets the model predict those hours much better.
 
 ## Takeaway
 
-**Findings:**
+**Findings:** No single forecast was best everywhere. A simple rule ("same
+price as yesterday") worked best on ordinary hours, while the model with net
+load worked best on the expensive hours that matter most. This supports
+notebook 02: knowing how much wind and solar there will be helps predict the
+hours when power is most expensive.
