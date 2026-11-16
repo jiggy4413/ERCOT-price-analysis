@@ -11,8 +11,23 @@ execute:
 ---
 
 Notebook 02 showed that wind and solar lower prices. This notebook asks whether
-that is useful in practice: does knowing how much wind and solar there will be
-make day-ahead price forecasts better?
+that is useful in practice: if you know how much wind and solar there will be
+tomorrow, can you forecast tomorrow's day-ahead prices better?
+
+## Key terms
+
+- **Day-ahead price:** the price for each hour of tomorrow, set in an auction
+  the day before. This is what we forecast.
+- **Baseline:** a simple rule a model has to beat, such as "tomorrow's price
+  will equal today's price at the same hour".
+- **Training and test data:** models learn from 2021–2023 (training) and are
+  graded on 2024–2025 (test), data they have never seen. This mimics forecasting
+  the future.
+- **MAE (mean absolute error):** the average size of a forecast's miss, in
+  \$/MWh. Lower is better.
+- **RMSE (root mean squared error):** like MAE, but punishes big misses much
+  more. A model with a low MAE but high RMSE is usually right but occasionally
+  very wrong.
 
 ```{r}
 #| label: setup
@@ -24,37 +39,175 @@ library(lubridate)
 ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
 ```
 
-## Baselines
+```{r}
+#| label: prep
+#| code-summary: "Code: prepare data"
 
-- Simple rules to beat: tomorrow's price equals today's price at the same hour,
-  and the same hour last week.
-- Split by time: train on 2021–2023, test on 2024–2025. Never shuffle time series.
+grid <- ercot |>
+  filter(hub == "HB_BUSAVG") |>
+  arrange(hour_start_utc) |>
+  mutate(
+    # What is known when tomorrow's forecast is made: today's and last week's
+    # day-ahead prices for the same hour.
+    price_yesterday = lag(da_price, 24),
+    price_last_week = lag(da_price, 168),
+    hour_f      = factor(hour_local),
+    weekday_f   = factor(as.character(weekday)),
+    month_f     = factor(month(time_local)),
+    net_load_gw = net_load_mw / 1000,
+    uri         = time_local >= as.POSIXct("2021-02-10", tz = "America/Chicago") &
+                  time_local <  as.POSIXct("2021-02-21", tz = "America/Chicago")
+  ) |>
+  filter(!is.na(price_last_week), !is.na(net_load_gw))
+
+# Train on 2021-2023 without Winter Storm Uri. Prices are capped at $500 for
+# training only, so a handful of extreme hours don't dominate what the models
+# learn. Forecasts are always graded against the real, uncapped prices.
+train <- grid |>
+  filter(year <= 2023, !uri) |>
+  mutate(target = pmin(da_price, 500))
+
+test <- filter(grid, year >= 2024)
+```
+
+## The forecasts
+
+Four ways to forecast each hour of tomorrow's day-ahead price:
+
+| Forecast | How it works |
+|---|---|
+| Same hour yesterday | Tomorrow at 3 p.m. = today at 3 p.m. |
+| Same hour last week | Tomorrow at 3 p.m. = the same weekday last week at 3 p.m. |
+| Time patterns | A regression using recent prices plus hour of day, weekday and month |
+| Time patterns + net load | The same regression, plus tomorrow's net load |
+
+**An important caveat:** the last model uses the **actual** net load for each
+hour. In practice a forecaster would use ERCOT's published forecasts of demand,
+wind and solar, which are close but not perfect. So this model shows the
+**best case**: how much better forecasts get when net load is known well.
 
 ```{r}
-# Your code here
+#| label: models
+#| code-summary: "Code: fit the two regression models"
+
+m_time <- lm(target ~ price_yesterday + price_last_week + hour_f + weekday_f + month_f,
+             data = train)
+
+m_net  <- lm(target ~ price_yesterday + price_last_week + hour_f + weekday_f + month_f +
+               net_load_gw + I(net_load_gw^2),
+             data = train)
+
+forecasts <- test |>
+  mutate(
+    `Same hour yesterday`      = price_yesterday,
+    `Same hour last week`      = price_last_week,
+    `Time patterns`            = predict(m_time, test),
+    `Time patterns + net load` = predict(m_net, test)
+  )
+
+model_names <- c("Same hour yesterday", "Same hour last week",
+                 "Time patterns", "Time patterns + net load")
+
+forecasts_long <- forecasts |>
+  select(hour_start_utc, time_local, year, hour_local, da_price, all_of(model_names)) |>
+  pivot_longer(all_of(model_names), names_to = "model", values_to = "forecast") |>
+  mutate(model = factor(model, levels = model_names),
+         error = forecast - da_price)
+
+# Save forecasts for the battery backtest in notebook 04
+write_rds(forecasts, here::here("data/processed/forecasts_2024_2025.rds"))
+```
+
+## How accurate is each forecast?
+
+```{r}
+#| label: accuracy-table
+#| code-summary: "Code: forecast errors on 2024–2025"
+
+accuracy <- forecasts_long |>
+  group_by(model) |>
+  summarise(
+    mae    = mean(abs(error)),
+    rmse   = sqrt(mean(error^2)),
+    median = median(abs(error))
+  ) |>
+  mutate(vs_yesterday = (1 - mae / mae[model == "Same hour yesterday"]) * 100)
+
+knitr::kable(accuracy, digits = 1,
+             col.names = c("Forecast", "MAE ($/MWh)", "RMSE ($/MWh)",
+                           "Typical miss ($/MWh, median)", "Improvement vs. yesterday (%)"),
+             caption = "Forecast errors, 2024–2025 (lower is better)")
+```
+
+```{r}
+#| label: accuracy-chart
+#| code-summary: "Code: chart of forecast errors"
+
+ggplot(accuracy, aes(reorder(model, -mae), mae)) +
+  geom_col(fill = c("grey60", "grey60", "steelblue", "seagreen")[as.integer(accuracy$model)]) +
+  geom_text(aes(label = paste0("$", round(mae, 1))), vjust = -0.4) +
+  labs(x = NULL, y = "Average miss (MAE, $/MWh)",
+       title = "Average forecast error on 2024–2025")
 ```
 
 **Findings:**
 
-## Models
+## What the forecasts look like
 
-- A model using only time patterns (hour, weekday, month).
-- The same model plus net load (demand minus wind and solar).
-- Only use information that would be known when the forecast is made.
+One summer week in 2024. The black line is the actual day-ahead price.
 
 ```{r}
-# Your code here
+#| label: example-week
+#| code-summary: "Code: forecasts vs. actual for one week"
+#| fig-height: 5
+
+week_start <- as.POSIXct("2024-08-18", tz = "America/Chicago")
+
+forecasts_long |>
+  filter(time_local >= week_start, time_local < week_start + days(7),
+         model %in% c("Same hour yesterday", "Time patterns + net load")) |>
+  ggplot(aes(time_local)) +
+  geom_line(aes(y = da_price, colour = "Actual price"), linewidth = 1) +
+  geom_line(aes(y = forecast, colour = model), linewidth = 0.7, alpha = 0.8) +
+  scale_colour_manual(values = c("Actual price" = "black",
+                                 "Same hour yesterday" = "grey60",
+                                 "Time patterns + net load" = "seagreen")) +
+  labs(x = NULL, y = "Day-ahead price ($/MWh)", colour = NULL,
+       title = "Forecasts vs. actual prices, Aug 18–24, 2024")
 ```
 
 **Findings:**
 
-## Evaluate
-
-- Compare the average forecast error (MAE and RMSE) of every model on 2024–2025.
-- Does adding net load beat the time-only model? Where do all models fail worst?
+## Where do the forecasts miss most?
 
 ```{r}
-# Your code here
+#| label: errors-by-hour
+#| code-summary: "Code: average miss by hour of day"
+
+forecasts_long |>
+  group_by(model, hour_local) |>
+  summarise(mae = mean(abs(error)), .groups = "drop") |>
+  ggplot(aes(hour_local, mae, colour = model)) +
+  geom_line(linewidth = 1) +
+  scale_colour_manual(values = c("grey60", "grey80", "steelblue", "seagreen")) +
+  labs(x = "Hour of day (Central)", y = "Average miss (MAE, $/MWh)", colour = NULL,
+       title = "Forecast errors by hour of day")
+```
+
+```{r}
+#| label: errors-by-price
+#| code-summary: "Code: average miss on normal vs. expensive hours"
+
+forecasts_long |>
+  mutate(price_level = if_else(da_price > 100, "Expensive hours (above $100)",
+                               "Normal hours ($100 or less)")) |>
+  group_by(price_level, model) |>
+  summarise(hours = n(), mae = mean(abs(error)), .groups = "drop") |>
+  pivot_wider(names_from = price_level, values_from = c(hours, mae)) |>
+  select(model, starts_with("mae")) |>
+  knitr::kable(digits = 1,
+               col.names = c("Forecast", "MAE: expensive hours", "MAE: normal hours"),
+               caption = "Average miss ($/MWh) on normal vs. expensive hours")
 ```
 
 **Findings:**
