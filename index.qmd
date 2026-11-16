@@ -34,9 +34,10 @@ strain.**
    has changed, and what drives prices through the day.
 2. [Do wind and solar lower prices?](analysis/02-renewables-and-price.qmd):
    how much prices fall as renewables grow, by year, season and region.
+3. [Forecasting prices](analysis/03-forecast.qmd): whether knowing net load
+   (demand minus wind and solar) makes day-ahead price forecasts better.
 
-Coming next: whether wind and solar help forecast prices, and whether a battery
-using these findings would have made money.
+Coming next: whether a battery using these findings would have made money.
 
 ## Data
 

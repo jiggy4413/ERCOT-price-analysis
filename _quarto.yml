@@ -1,11 +1,12 @@
 project:
   type: website
   output-dir: _site
-  # Only finished notebooks go on the site. Add 03 and 04 here as they are completed.
+  # Only finished notebooks go on the site. Add 04 here as they are completed.
   render:
     - index.qmd
     - analysis/01-explore.qmd
     - analysis/02-renewables-and-price.qmd
+    - analysis/03-forecast.qmd
 
 website:
   title: "ERCOT Price Analysis"
@@ -17,6 +18,8 @@ website:
         text: Exploring the data
       - href: analysis/02-renewables-and-price.qmd
         text: Do renewables lower prices?
+      - href: analysis/03-forecast.qmd
+        text: Forecasting prices
     right:
       - icon: github
         href: https://github.com/jiggy4413/ERCOT-price-analysis
