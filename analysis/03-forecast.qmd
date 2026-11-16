@@ -1,0 +1,64 @@
+---
+title: "Can renewables help forecast prices?"
+author: "Juan Ignacio Mendez Valdez"
+format:
+  html:
+    code-fold: true
+    toc: true
+execute:
+  warning: false
+  message: false
+---
+
+Notebook 02 showed that wind and solar lower prices. This notebook asks whether
+that is useful in practice: does knowing how much wind and solar there will be
+make day-ahead price forecasts better?
+
+```{r}
+#| label: setup
+#| code-summary: "Code: load packages and data"
+
+library(tidyverse)
+library(lubridate)
+
+ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
+```
+
+## Baselines
+
+- Simple rules to beat: tomorrow's price equals today's price at the same hour,
+  and the same hour last week.
+- Split by time: train on 2021–2023, test on 2024–2025. Never shuffle time series.
+
+```{r}
+# Your code here
+```
+
+**Findings:**
+
+## Models
+
+- A model using only time patterns (hour, weekday, month).
+- The same model plus net load (demand minus wind and solar).
+- Only use information that would be known when the forecast is made.
+
+```{r}
+# Your code here
+```
+
+**Findings:**
+
+## Evaluate
+
+- Compare the average forecast error (MAE and RMSE) of every model on 2024–2025.
+- Does adding net load beat the time-only model? Where do all models fail worst?
+
+```{r}
+# Your code here
+```
+
+**Findings:**
+
+## Takeaway
+
+**Findings:**

@@ -1,7 +1,7 @@
 project:
   type: website
   output-dir: _site
-  # Only finished notebooks go on the site. Add 03-05 here as they are completed.
+  # Only finished notebooks go on the site. Add 03 and 04 here as they are completed.
   render:
     - index.qmd
     - analysis/01-explore.qmd

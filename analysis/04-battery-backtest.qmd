@@ -1,6 +1,6 @@
 ---
 title: "Would a battery have made money?"
-author: "Juan"
+author: "Juan Ignacio Mendez Valdez"
 format:
   html:
     code-fold: true
@@ -10,46 +10,62 @@ execute:
   message: false
 ---
 
-Backtest a simple battery: buy power when it is cheap, sell when it is expensive.
+The final test: putting the earlier findings to use. A battery buys power when
+it is cheap and sells when it is expensive. Notebooks 01 and 02 showed when
+power is cheap and expensive; notebook 03 built a forecast. Would a battery
+using them have made money?
 
 ```{r}
 #| label: setup
+#| code-summary: "Code: load packages and data"
+
 library(tidyverse)
 library(lubridate)
 
-# Run the scripts in R/ first (see the README).
 ercot <- read_rds(here::here("data/processed/ercot_hourly.rds"))
 ```
 
-## Set up the battery
+## Why batteries can make money
 
-- Choose a size (for example 100 MW / 200 MWh), round-trip efficiency (about 85%), and one charge-discharge cycle per day.
-- State your simplifications: price-taker, no degradation, no ancillary-service revenue.
+- How much of the total cost comes from a small number of very expensive hours?
+- Did the day-ahead price already signal those hours a day in advance?
 
 ```{r}
 # Your code here
 ```
 
-Findings:
+**Findings:**
+
+## Set up the battery
+
+- Size (for example 100 MW / 200 MWh), round-trip efficiency (about 85%), and
+  one charge-discharge cycle per day.
+- Simplifications: price-taker, no degradation, no ancillary-service revenue.
 
 ## Strategies
 
-- Perfect foresight: charge in each day's cheapest 2 hours and discharge in the most expensive 2. This is the upper bound.
-- A rule you could actually follow, using only information known in advance (for example the day-ahead prices).
-- Compare revenue per MW-year by hub and by year. How much of the perfect-foresight revenue does the realistic rule capture?
+- Perfect hindsight: charge in each day's cheapest 2 hours, sell in the most
+  expensive 2. The upper bound.
+- Day-ahead rule: choose the hours using only day-ahead prices, known in advance.
+- Forecast rule: choose the hours using the forecast from notebook 03.
 
 ```{r}
 # Your code here
 ```
 
-Findings:
+**Findings:**
+
+## Results
+
+- Revenue per MW-year by strategy, hub and year.
+- How much of the perfect-hindsight revenue does each realistic strategy capture?
+
+```{r}
+# Your code here
+```
+
+**Findings:**
 
 ## Takeaway
 
-- Which hub and which years were best for storage, and why?
-
-```{r}
-# Your code here
-```
-
-Findings:
+**Findings:**

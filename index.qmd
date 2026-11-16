@@ -35,8 +35,8 @@ strain.**
 2. [Do wind and solar lower prices?](analysis/02-renewables-and-price.qmd):
    how much prices fall as renewables grow, by year, season and region.
 
-Coming next: what causes price spikes, whether a battery would have made money,
-and forecasting day-ahead prices.
+Coming next: whether wind and solar help forecast prices, and whether a battery
+using these findings would have made money.
 
 ## Data
 

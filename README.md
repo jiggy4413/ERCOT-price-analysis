@@ -7,9 +7,8 @@ How do wind and solar shape electricity prices on the Texas grid, and what is th
 ## Questions
 
 1. **Do wind and solar lower prices?** How much does the hourly price fall as the renewable share of demand rises, and has that changed from 2021 to 2025?
-2. **What drives price spikes?** When do the most expensive hours happen, including Winter Storm Uri (February 2021), and what do they have in common?
-3. **Would a battery have made money?** Backtest a battery that charges in cheap hours and discharges in expensive ones, at each trading hub.
-4. **Can day-ahead prices be forecast?** Build a model and test it honestly against simple baselines.
+2. **Can renewables help forecast prices?** Does knowing how much wind and solar there will be make day-ahead price forecasts better than simple baselines?
+3. **Would a battery have made money?** Backtest a battery that charges in cheap hours and discharges in expensive ones, using the earlier findings and the forecast to choose when.
 
 ## Findings
 
@@ -57,9 +56,8 @@ R/
 analysis/
   01-explore.qmd           data checks and first look
   02-renewables-and-price.qmd
-  03-price-spikes.qmd
+  03-forecast.qmd
   04-battery-backtest.qmd
-  05-forecast.qmd
 run_all.R                  rebuilds the processed data
 ```
 
